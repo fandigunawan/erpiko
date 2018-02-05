@@ -21,6 +21,7 @@ class SignedData::Impl {
     PKCS7 *pkcs7 = nullptr;
     BIO* bio = BIO_new(BIO_s_mem());
     std::string smimePartial = "";
+    EVP_MD* digestMd = const_cast<EVP_MD*>(EVP_get_digestbynid(NID_sha256));
 
     std::unique_ptr<RsaKey> privateKey;
     std::vector<std::unique_ptr<Certificate>> ca;
@@ -59,7 +60,13 @@ class SignedData::Impl {
     }
 
     void setup(const Certificate& certificate, const RsaKey& privateKey) {
-      pkey = Converters::rsaKeyToPkey(privateKey);
+      if (privateKey.onDevice()) {
+        // If it's an on-device private key, use public key EVP to mock private key's
+        // The LibreSSL will compare type, ameth and rsa->n
+        pkey = Converters::rsaPublicKeyToPkey(certificate.publicKey());
+      } else {
+        pkey = Converters::rsaKeyToPkey(privateKey);
+      }
       cert = Converters::certificateToX509(certificate);
     }
 
@@ -272,9 +279,9 @@ bool SignedData::verify() const {
   sk_X509_push(certs, impl->cert);
   bool ret = 0;
   if (PKCS7_is_detached(impl->pkcs7)) {
-    ret = PKCS7_verify(impl->pkcs7, certs, store, impl->bio, NULL, PKCS7_NOVERIFY) == 1;
+    ret = PKCS7_verify(impl->pkcs7, certs, store, impl->bio, NULL, PKCS7_NOVERIFY | PKCS7_NOINTERN) == 1;
   } else {
-    ret = PKCS7_verify(impl->pkcs7, certs, store, NULL, NULL, PKCS7_NOVERIFY) == 1;
+    ret = PKCS7_verify(impl->pkcs7, certs, store, NULL, NULL, PKCS7_NOVERIFY | PKCS7_NOINTERN) == 1;
   }
   if (ret == 0) {
     ERR_print_errors_fp(stderr);
@@ -288,7 +295,9 @@ void SignedData::signDetached() {
   if (impl->pkcs7) return;
 
   impl->signingMode = DETACHED;
-  impl->pkcs7 = PKCS7_sign(impl->cert, impl->pkey, NULL, impl->bio, PKCS7_DETACHED | PKCS7_NOCERTS | PKCS7_NOSMIMECAP | PKCS7_BINARY);
+  impl->pkcs7 = PKCS7_sign(nullptr, nullptr, NULL, impl->bio, PKCS7_DETACHED | PKCS7_NOCERTS | PKCS7_NOSMIMECAP | PKCS7_BINARY | PKCS7_PARTIAL);
+  PKCS7_sign_add_signer(impl->pkcs7, impl->cert, impl->pkey, impl->digestMd, PKCS7_REUSE_DIGEST);
+  PKCS7_final(impl->pkcs7, impl->bio, PKCS7_DETACHED | PKCS7_NOCERTS | PKCS7_NOSMIMECAP | PKCS7_BINARY);
 }
 
 void SignedData::sign() {

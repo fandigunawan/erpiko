@@ -8,6 +8,7 @@
 #include "erpiko/certificate.h"
 #include "erpiko/pkcs12.h"
 #include "erpiko/enveloped-data.h"
+#include "erpiko/signed-data.h"
 #include <iostream>
 
 using namespace std;
@@ -435,6 +436,7 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
       const Certificate& certp12 = p12->certificate();
 
       t.removePrivateKey("omama"); // ignore result
+      t.removePrivateKey("opapa"); // ignore result
       auto putPrivKeyResult = t.putPrivateKey(pk, "opapa");
       REQUIRE(putPrivKeyResult == TokenOpResult::SUCCESS);
 
@@ -460,6 +462,77 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
       auto decrypted = p7v->decrypt(certp12, *privKey);
       REQUIRE(v == decrypted);
       decrypted.clear();
+
+      // Clean
+      t.removePrivateKey("opapa"); // ignore result
+      t.logout();
+
+    }
+    THEN("Sign and verify without key label") {
+      // The private key will be queried by public key's modulus and exponent
+      P11Token p11Token;
+      Token& t = (Token&)p11Token;
+
+#ifdef WIN32
+	  auto r = t.load("c:\\windows\\system32\\eTPKCS11.dll");
+#else
+	  auto r = t.load("/home/mdamt/src/tmp/hsm/lib/softhsm/libsofthsm2.so");
+#endif
+      REQUIRE(r == true);
+      std::cout << "Please insert the smartcard to slot" << std::endl;
+      int slotId;
+#ifdef WIN32
+      auto status = t.waitForCardStatus(slotId);
+      if (status == CardStatus::NOT_PRESENT) {
+          std::cout << "Token not present, please put it back...";
+          status = t.waitForCardStatus(slotId);
+      }
+      REQUIRE(status == CardStatus::PRESENT);
+
+      std::cout << "Logging in." << std::endl;
+      r = t.login(slotId, "qwerty");
+#else
+      auto status = t.waitForCardStatus(slotId);
+      REQUIRE(status == CardStatus::PRESENT);
+      std::cout << "Slot event occured. Card is present." << std::endl;
+      std::cout << "Smartcard has been inserted" << std::endl;
+
+      r = t.login(933433059, "qwerty");
+#endif
+
+      REQUIRE(r == true);
+      std::cout << "Logged in" << std::endl;
+
+      auto src = DataSource::fromFile("assets/verify/pkitbverify1.p12");
+      auto p12Data = src->readAll();
+      auto p12 = Erpiko::Pkcs12::fromDer(p12Data, "123456");
+      const RsaKey& pk = p12->privateKey();
+      const Certificate& certp12 = p12->certificate();
+
+      t.removePrivateKey("opapa"); // ignore result
+      auto putPrivKeyResult = t.putPrivateKey(pk, "opapa");
+      REQUIRE(putPrivKeyResult == TokenOpResult::SUCCESS);
+
+      std::cout << "sign with privkey from token" << std::endl;
+      src = DataSource::fromFile("assets/data.txt");
+      auto v = src->readAll();
+
+      t.unsetKey(); // Do encrypt decrypt without the help of key label
+
+      const RsaKey* privKey = t.getPrivateKey(certp12.publicKey());
+      SignedData* s7 = new SignedData(certp12, *privKey);
+      DataSource* toBeSigned = DataSource::fromFile("assets/data.txt");
+      auto dataVector = toBeSigned->readAll();
+      s7->update(dataVector);
+      s7->signDetached();
+      auto der = s7->toDer();
+
+
+      std::cout << "verify it" << std::endl;
+      auto s7_2 = SignedData::fromDer(der, certp12);
+      s7_2->update(dataVector);
+      bool isVerified = s7_2->verify();
+      REQUIRE(isVerified == true);
 
       // Clean
       t.removePrivateKey("opapa"); // ignore result
