@@ -367,7 +367,6 @@ bool populateMechanism(CK_MECHANISM* m, int type) {
 
 int rsaSign(int type, const unsigned char *from, unsigned int flen, unsigned char *to, unsigned int *siglen, const RSA *rsa) {
   (void) rsa;
-  (void) siglen;
 
   EngineP11& p11 = EngineP11::getInstance();
   CK_MECHANISM mechanism = {
@@ -415,6 +414,9 @@ int rsaSign(int type, const unsigned char *from, unsigned int flen, unsigned cha
   if (rv != CKR_OK) {
     return 0;
   }
+
+  *siglen = (unsigned int) outLength;
+
   return 1;
 }
 

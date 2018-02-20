@@ -4,6 +4,7 @@
 #include <openssl/pkcs7.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
+#include <openssl/engine.h>
 #include <iostream>
 
 namespace Erpiko {
@@ -274,14 +275,20 @@ void SignedData::update(const unsigned char* data, const size_t length) {
 }
 
 bool SignedData::verify() const {
+  int flags = PKCS7_NOVERIFY | PKCS7_NOINTERN; // PKCS7_NOINTERN is required when using token engine
+  (void) ENGINE_by_id("Erpiko-P11");
+  if (std::string(ERR_reason_error_string(ERR_get_error())) == "no such engine") {
+    flags = PKCS7_NOVERIFY;
+  }
+
   STACK_OF(X509) *certs = sk_X509_new_null();
   auto store = X509_STORE_new();
   sk_X509_push(certs, impl->cert);
   bool ret = 0;
   if (PKCS7_is_detached(impl->pkcs7)) {
-    ret = PKCS7_verify(impl->pkcs7, certs, store, impl->bio, NULL, PKCS7_NOVERIFY | PKCS7_NOINTERN) == 1;
+    ret = PKCS7_verify(impl->pkcs7, certs, store, impl->bio, NULL, flags) == 1;
   } else {
-    ret = PKCS7_verify(impl->pkcs7, certs, store, NULL, NULL, PKCS7_NOVERIFY | PKCS7_NOINTERN) == 1;
+    ret = PKCS7_verify(impl->pkcs7, certs, store, NULL, NULL, flags) == 1;
   }
   if (ret == 0) {
     ERR_print_errors_fp(stderr);
