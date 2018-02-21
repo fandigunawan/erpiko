@@ -466,5 +466,165 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
 
     }
   }
+
+  GIVEN("A new certificate") {
+
+
+    P11Token p11Token;
+    Token& t = (Token&)p11Token;
+
+#ifdef WIN32
+          auto r = t.load("c:\\windows\\system32\\eTPKCS11.dll");
+#else
+          auto r = t.load("/home/mdamt/src/tmp/hsm/lib/softhsm/libsofthsm2.so");
+#endif
+    REQUIRE(r == true);
+    std::cout << "Please insert the smartcard to slot" << std::endl;
+    int slotId;
+#ifdef WIN32
+    auto status = t.waitForCardStatus(slotId);
+    if (status == CardStatus::NOT_PRESENT) {
+        std::cout << "Token not present, please put it back...";
+        status = t.waitForCardStatus(slotId);
+    }
+    REQUIRE(status == CardStatus::PRESENT);
+
+    std::cout << "Logging in." << std::endl;
+    r = t.login(slotId, "qwerty");
+#else
+    auto status = t.waitForCardStatus(slotId);
+    REQUIRE(status == CardStatus::PRESENT);
+    std::cout << "Slot event occured. Card is present." << std::endl;
+    std::cout << "Smartcard has been inserted" << std::endl;
+
+    r = t.login(933433059, "qwerty");
+#endif
+
+    REQUIRE(r == true);
+    std::cout << "Logged in" << std::endl;
+
+
+    DataSource* src = DataSource::fromFile("assets/verify-2048-sized/crl.der");
+    auto originCaCrlDer = src->readAll();
+
+    std::cout << "Certificate::fromPem erpioktestsuite1" << std::endl;
+    src = DataSource::fromFile("assets/verify-2048-sized/erpikotestsuite1.pem");
+    auto v = src->readAll();
+    std::string pkitbverify1Pem(v.begin(),v.end());
+    Certificate* pkitbverify1Cert = Certificate::fromPem(pkitbverify1Pem);
+    REQUIRE_FALSE(pkitbverify1Cert == nullptr);
+   /*
+    src = DataSource::fromFile("assets/verify/pkitbverify2.pem");
+    v = src->readAll();
+    std::string pkitbverify2Pem(v.begin(),v.end());
+    Certificate* pkitbverify2Cert = Certificate::fromPem(pkitbverify2Pem);
+    REQUIRE_FALSE(pkitbverify2Cert == nullptr);
+
+    src = DataSource::fromFile("assets/verify/pkitbverify3.pem");
+    v = src->readAll();
+    std::string pkitbverify3Pem(v.begin(),v.end());
+    Certificate* pkitbverify3Cert = Certificate::fromPem(pkitbverify3Pem);
+    REQUIRE_FALSE(pkitbverify3Cert == nullptr);
+
+    src = DataSource::fromFile("assets/verify/pkitbverify4.pem");
+    v = src->readAll();
+    std::string pkitbverify4Pem(v.begin(),v.end());
+    Certificate* pkitbverify4Cert = Certificate::fromPem(pkitbverify4Pem);
+    REQUIRE_FALSE(pkitbverify4Cert == nullptr);
+
+    src = DataSource::fromFile("assets/verify/pkitbverify5.pem");
+    v = src->readAll();
+    std::string pkitbverify5Pem(v.begin(),v.end());
+    Certificate* pkitbverify5Cert = Certificate::fromPem(pkitbverify5Pem);
+    REQUIRE_FALSE(pkitbverify5Cert == nullptr);
+
+    src = DataSource::fromFile("assets/verify/pkitbverify6.pem");
+    v = src->readAll();
+    std::string pkitbverify6Pem(v.begin(),v.end());
+    Certificate* pkitbverify6Cert = Certificate::fromPem(pkitbverify6Pem);
+    REQUIRE_FALSE(pkitbverify6Cert == nullptr);
+
+    src = DataSource::fromFile("assets/verify/pkitbverify7.pem");
+    v = src->readAll();
+    std::string pkitbverify7Pem(v.begin(),v.end());
+    Certificate* pkitbverify7Cert = Certificate::fromPem(pkitbverify7Pem);
+    REQUIRE_FALSE(pkitbverify7Cert == nullptr);
+
+    src = DataSource::fromFile("assets/verify/pkitbverify8.pem");
+    v = src->readAll();
+    std::string pkitbverify8Pem(v.begin(),v.end());
+    Certificate* pkitbverify8Cert = Certificate::fromPem(pkitbverify8Pem);
+    REQUIRE_FALSE(pkitbverify8Cert == nullptr);
+*/
+
+    std::cout << "Certificate::fromPem originca" << std::endl;
+    src = DataSource::fromFile("assets/verify-2048-sized/TNISiberLabCA3.pem");
+    v = src->readAll();
+    std::string originCa(v.begin(),v.end());
+    Certificate* originCaCert = Certificate::fromPem(originCa);
+    REQUIRE_FALSE(originCaCert == nullptr);
+
+    std::cout << "Certificate::fromPem originrootca" << std::endl;
+    src = DataSource::fromFile("assets/verify-2048-sized/TNISiberLabRootCA.pem");
+    v = src->readAll();
+    std::string originRootCa(v.begin(),v.end());
+    Certificate* originRootCaCert = Certificate::fromPem(originRootCa);
+    REQUIRE_FALSE(originRootCaCert == nullptr);
+
+    THEN("verify the certs") {
+
+      // pkitbverify1, should be Trusted
+      auto isTrusted = pkitbverify1Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify-2048-sized/TNISiberLabCA3-chain.pem");
+      REQUIRE(isTrusted == CertificateTrustState::TRUSTED);
+      auto isRevoked = pkitbverify1Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
+      REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
+/*
+
+      // pkitbverify2, should be EXPIRED
+      isTrusted = pkitbverify2Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify/originCa-chain.pem");
+      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
+      isRevoked = pkitbverify2Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
+      REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
+      // To bring the expired state to user, the expiration date could be checked manually in the cert itself.
+
+      // pkitbverify3, should be NOT TRUSTED
+      isTrusted = pkitbverify3Cert->isTrusted(originRootCaCert->toDer(), otherCaCrlDer, "assets/verify/originCa-chain.pem");
+      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
+      isRevoked = pkitbverify3Cert->isRevoked(originCaCert->toDer(), otherCaCrlDer);
+      REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
+
+      // pkitbverify4, should be NOT TRUSTED
+      isTrusted = pkitbverify4Cert->isTrusted(originRootCaCert->toDer(), otherCaCrlDer, "assets/verify/originCa-chain.pem");
+      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
+      isRevoked = pkitbverify4Cert->isRevoked(originCaCert->toDer(), otherCaCrlDer);
+      REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
+
+      // pkitbverify5, should be REVOKED
+      isTrusted = pkitbverify5Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify/originCa-chain.pem");
+      REQUIRE(isTrusted == CertificateTrustState::TRUSTED);
+      isRevoked = pkitbverify5Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
+      REQUIRE(isRevoked == CertificateRevocationState::REVOKED);
+
+      // pkitbverify6, should be REVOKED
+      isTrusted = pkitbverify6Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify/originCa-chain.pem");
+      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
+      isRevoked = pkitbverify6Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
+      REQUIRE(isRevoked == CertificateRevocationState::REVOKED);
+
+      // pkitbverify7, should be NOT TRUSTED
+      isTrusted = pkitbverify7Cert->isTrusted(originRootCaCert->toDer(), otherCaCrlDer, "assets/verify/originCa-chain.pem");
+      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
+      isRevoked = pkitbverify7Cert->isRevoked(originCaCert->toDer(), otherCaCrlDer);
+      REQUIRE(isRevoked == CertificateRevocationState::UNKNOWN);
+
+      // pkitbverify8, should be NOT TRUSTED
+      isTrusted = pkitbverify8Cert->isTrusted(originRootCaCert->toDer(), otherCaCrlDer, "assets/verify/originCa-chain.pem");
+      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
+      isRevoked = pkitbverify8Cert->isRevoked(originCaCert->toDer(), otherCaCrlDer);
+      REQUIRE(isRevoked == CertificateRevocationState::UNKNOWN);
+*/
+    }
+  }
+
 }
 } // namespace Erpiko
