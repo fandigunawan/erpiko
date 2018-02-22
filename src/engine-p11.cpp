@@ -447,6 +447,50 @@ int rsaVerify(int type, const unsigned char *from, unsigned int flen, const unsi
     return 0;
   }
   rv = F->C_Verify(p11.getSession(), const_cast<unsigned char*>(from), flen, const_cast<unsigned char*>(sig), siglen);
+/*
+*/
+std::cout << "====================== rv 1" << std::endl;
+std::cout << flen << std::endl;
+std::cout << from << std::endl;
+std::cout << siglen << std::endl;
+std::cout << sig << std::endl;
+
+if (rv = CKR_ARGUMENTS_BAD) {
+std::cout << "====================== rv 1" << std::endl;
+} else if (rv = CKR_CRYPTOKI_NOT_INITIALIZED) {
+std::cout << "====================== rv 2" << std::endl;
+} else if (rv = CKR_DATA_INVALID) {
+std::cout << "====================== rv 3" << std::endl;
+} else if (rv = CKR_DATA_LEN_RANGE) {
+std::cout << "====================== rv 4" << std::endl;
+} else if (rv = CKR_DEVICE_ERROR) {
+std::cout << "====================== rv 5" << std::endl;
+} else if (rv = CKR_DEVICE_MEMORY) {
+std::cout << "====================== rv 6" << std::endl;
+} else if (rv = CKR_DEVICE_REMOVED) {
+std::cout << "====================== rv 7" << std::endl;
+} else if (rv = CKR_FUNCTION_CANCELED) {
+std::cout << "====================== rv 8" << std::endl;
+} else if (rv = CKR_FUNCTION_FAILED) {
+std::cout << "====================== rv 9" << std::endl;
+} else if (rv = CKR_GENERAL_ERROR) {
+std::cout << "====================== rv 10" << std::endl;
+} else if (rv = CKR_HOST_MEMORY) {
+std::cout << "====================== rv 11" << std::endl;
+} else if (rv = CKR_OK) {
+std::cout << "====================== rv 12" << std::endl;
+} else if (rv = CKR_OPERATION_NOT_INITIALIZED) {
+std::cout << "====================== rv 13" << std::endl;
+} else if (rv = CKR_SESSION_CLOSED) {
+std::cout << "====================== rv 14" << std::endl;
+} else if (rv = CKR_SESSION_HANDLE_INVALID) {
+std::cout << "====================== rv 15" << std::endl;
+} else if (rv = CKR_SIGNATURE_INVALID) {
+std::cout << "====================== rv 16" << std::endl;
+} else if (rv = CKR_SIGNATURE_LEN_RANGE) {
+std::cout << "====================== rv 17" << std::endl;
+}
+
   if (rv != CKR_OK) {
     return 0;
   }
