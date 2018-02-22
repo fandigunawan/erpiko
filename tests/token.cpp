@@ -20,6 +20,7 @@ namespace Erpiko {
  */
 
 SCENARIO("Token init", "[.][p11]") {
+/*
   GIVEN("A token") {
     THEN("Token is initialized") {
 
@@ -466,7 +467,7 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
 
     }
   }
-
+*/
   GIVEN("A new certificate") {
 
 
