@@ -461,6 +461,9 @@ int rsaVerifySoftware(int type, const unsigned char *from, unsigned int flen, co
   } else {
     retval = 0;
   }
+  if (dsig != nullptr) {
+    X509_SIG_free(dsig);
+  }
   delete[] s;
   return retval;
 }
