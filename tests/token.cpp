@@ -20,7 +20,6 @@ namespace Erpiko {
  */
 
 SCENARIO("Token init", "[.][p11]") {
-/*
   GIVEN("A token") {
     THEN("Token is initialized") {
 
@@ -315,13 +314,11 @@ SCENARIO("Token init", "[.][p11]") {
       t.logout();
     }
   }
-*/
 }
 
 SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
   GIVEN("An initialized token") {
     std::cout << "---------------------------signed data ----\n";
-    /*
     THEN("Encryption and decryption with key label") {
       P11Token p11Token;
       Token& t = (Token&)p11Token;
@@ -398,7 +395,6 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
       t.logout();
 
     }
-    */
 
     THEN("Sign and verify without key label") {
       // The private key will be queried by public key's modulus and exponent
@@ -509,9 +505,11 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
     REQUIRE(r == true);
     std::cout << "Logged in" << std::endl;
 
-
     DataSource* src = DataSource::fromFile("assets/verify-2048-sized/crl.der");
     auto originCaCrlDer = src->readAll();
+
+    src = DataSource::fromFile("assets/verify/otherCa.crl.der");
+    auto otherCaCrlDer = src->readAll();
 
     std::cout << "Certificate::fromPem erpioktestsuite1" << std::endl;
     src = DataSource::fromFile("assets/verify-2048-sized/erpikotestsuite1.pem");
@@ -519,7 +517,7 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
     std::string pkitbverify1Pem(v.begin(),v.end());
     Certificate* pkitbverify1Cert = Certificate::fromPem(pkitbverify1Pem);
     REQUIRE_FALSE(pkitbverify1Cert == nullptr);
-   /*
+
     src = DataSource::fromFile("assets/verify/pkitbverify2.pem");
     v = src->readAll();
     std::string pkitbverify2Pem(v.begin(),v.end());
@@ -561,7 +559,6 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
     std::string pkitbverify8Pem(v.begin(),v.end());
     Certificate* pkitbverify8Cert = Certificate::fromPem(pkitbverify8Pem);
     REQUIRE_FALSE(pkitbverify8Cert == nullptr);
-*/
 
     std::cout << "Certificate::fromPem originca" << std::endl;
     src = DataSource::fromFile("assets/verify-2048-sized/TNISiberLabCA3.pem");
@@ -587,7 +584,6 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
       REQUIRE(isTrusted == CertificateTrustState::TRUSTED);
       auto isRevoked = pkitbverify1Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
       REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
-/*
 
       // pkitbverify2, should be EXPIRED
       isTrusted = pkitbverify2Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify/originCa-chain.pem");
@@ -607,6 +603,7 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
       REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
       isRevoked = pkitbverify4Cert->isRevoked(originCaCert->toDer(), otherCaCrlDer);
       REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
+/*
 
       // pkitbverify5, should be REVOKED
       isTrusted = pkitbverify5Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify/originCa-chain.pem");
