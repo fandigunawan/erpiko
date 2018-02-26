@@ -185,7 +185,7 @@ class Certificate::Impl {
       BN_free(bn);
       serialNumber = dec;
     }
-    
+
     void resetPublicKey() {
       auto evp = X509_get_pubkey(x509);
       if (evp) {
@@ -323,7 +323,7 @@ CertificateRevocationState::State Certificate::isRevoked(const std::vector<unsig
   if (issuer) {
     EVP_PKEY *issuerKey = X509_get_pubkey(issuer);
     ASN1_INTEGER *serial = X509_get_serialNumber(impl->x509);
-    
+
     if (crl && issuerKey && X509_CRL_verify(crl, issuerKey)) {
       status = CertificateRevocationState::NOT_REVOKED;
       auto *revokedList = crl->crl->revoked;
@@ -364,7 +364,9 @@ CertificateTrustState::State Certificate::isTrusted(const std::vector<unsigned c
   X509_STORE_add_crl(store, crl);
   X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK);
 
+  std::cout << "olala 1:" << std::dec << ctx->error << "\n";
   int verifyResult = X509_verify_cert(ctx);
+  std::cout << "olala 2:" << std::dec << ctx->error << "\n";
   X509_STORE_CTX_cleanup(ctx);
   X509_STORE_CTX_free(ctx);
   sk_X509_free(chain);

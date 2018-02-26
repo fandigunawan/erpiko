@@ -315,9 +315,13 @@ SCENARIO("Token init", "[.][p11]") {
       t.logout();
     }
   }
+*/
 }
+
 SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
   GIVEN("An initialized token") {
+    std::cout << "---------------------------signed data ----\n";
+    /*
     THEN("Encryption and decryption with key label") {
       P11Token p11Token;
       Token& t = (Token&)p11Token;
@@ -394,6 +398,7 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
       t.logout();
 
     }
+    */
 
     THEN("Sign and verify without key label") {
       // The private key will be queried by public key's modulus and exponent
@@ -465,9 +470,9 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
       t.removePrivateKey("omama"); // ignore result
       t.logout();
 
+    std::cout << "---------------------------signed data end ----\n";
     }
   }
-*/
   GIVEN("A new certificate") {
 
 
@@ -566,7 +571,7 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
     REQUIRE_FALSE(originCaCert == nullptr);
 
     std::cout << "Certificate::fromPem originrootca" << std::endl;
-    src = DataSource::fromFile("assets/verify-2048-sized/TNISiberLabRootCA.pem");
+    src = DataSource::fromFile("assets/verify-2048-sized/erpikotestsuite2.pem");
     v = src->readAll();
     std::string originRootCa(v.begin(),v.end());
     Certificate* originRootCaCert = Certificate::fromPem(originRootCa);
@@ -574,7 +579,10 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
 
     THEN("verify the certs") {
 
+      t.unsetKey();
       // pkitbverify1, should be Trusted
+      std::cout << Utils::hexString(originCaCrlDer) << std::endl;
+      std::cout << "CACERT\n" << Utils::hexString(originRootCaCert->toDer()) << std::endl;
       auto isTrusted = pkitbverify1Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify-2048-sized/TNISiberLabCA3-chain.pem");
       REQUIRE(isTrusted == CertificateTrustState::TRUSTED);
       auto isRevoked = pkitbverify1Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
