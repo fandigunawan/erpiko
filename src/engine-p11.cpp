@@ -458,6 +458,8 @@ int rsaVerifySoftware(int type, const unsigned char *from, unsigned int flen, co
     if (retval && res == 0) {
       retval = 1;
     }
+  } else {
+    retval = 0;
   }
   delete[] s;
   return retval;
