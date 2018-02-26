@@ -30,9 +30,7 @@ class EngineP11 {
   std::vector<unsigned char> keyId;
 
   private:
-    EngineP11() {
-      defaultRsa = const_cast<RSA_METHOD*>(RSA_get_default_method());
-      std::cout << "000RSA meth1:" << defaultRsa<< "\n";
+    EngineP11() : defaultRsa(RSA_get_default_method()) {
     }
 
   public:
@@ -107,7 +105,7 @@ class EngineP11 {
 
     ENGINE *erpikoEngine = nullptr;
     ENGINE *erpikoDefault = nullptr;
-    RSA_METHOD* defaultRsa;
+    const RSA_METHOD* defaultRsa;
   };
 } // namespace Erpiko
 #endif // _ENGINE_P11_H
