@@ -483,7 +483,6 @@ int rsaVerify(int type, const unsigned char *from, unsigned int flen, const unsi
 
   CK_OBJECT_HANDLE key = findKey(CKO_PUBLIC_KEY, p11.getKeyId(), p11.getKeyLabel().c_str());
 
-  key = 0;
   if (key == 0) {
     keyFromRSA(rsa, &key); // Try to make up one then
     std::cout << "key from rsa:" << key << "\n";

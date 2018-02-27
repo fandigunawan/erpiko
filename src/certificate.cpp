@@ -364,9 +364,7 @@ CertificateTrustState::State Certificate::isTrusted(const std::vector<unsigned c
   X509_STORE_add_crl(store, crl);
   X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK);
 
-  std::cout << "olala 1:" << std::dec << ctx->error << "\n";
   int verifyResult = X509_verify_cert(ctx);
-  std::cout << "olala 2:" << std::dec << ctx->error << "\n";
   X509_STORE_CTX_cleanup(ctx);
   X509_STORE_CTX_free(ctx);
   sk_X509_free(chain);
