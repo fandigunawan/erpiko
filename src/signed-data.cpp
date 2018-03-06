@@ -202,6 +202,25 @@ class SignedData::Impl {
       }
       return ret;
     }
+
+    std::vector<std::string> getSignerSerialNumbers(){
+      std::vector<std::string> serialNumbers;
+      STACK_OF(PKCS7_SIGNER_INFO) *signers = NULL;
+      signers = pkcs7->d.signed_and_enveloped->signer_info;
+      for (int i = 0; signers && sk_PKCS7_SIGNER_INFO_num(signers) > 0 && i < sk_PKCS7_SIGNER_INFO_num(signers); i++) {
+        PKCS7_SIGNER_INFO *signer = sk_PKCS7_SIGNER_INFO_value(signers, i);
+        PKCS7_ISSUER_AND_SERIAL *issuerSerial = signer->issuer_and_serial;
+        auto bn = ASN1_INTEGER_to_BN(issuerSerial->serial, NULL);
+        auto dec = Converters::bnToString(bn);
+        std::stringstream ss;
+        ss << dec;
+        auto sn = BigInt::fromString(ss.str());
+        serialNumbers.push_back(sn->toHexString());
+        PKCS7_SIGNER_INFO_free(signer);
+        BN_free(bn);
+      }
+      return serialNumbers;
+    }
 };
 
 SignedData::SignedData() : impl{std::make_unique<Impl>()} {
@@ -428,6 +447,10 @@ std::vector<const Certificate*> SignedData::certificates() const {
 
 std::vector<unsigned char> SignedData::digest(unsigned int index) const {
   return impl->digest(index);
+}
+
+std::vector<std::string> SignedData::getSignerSerialNumbers() {
+  return impl->getSignerSerialNumbers();
 }
 
 } // namespace Erpiko

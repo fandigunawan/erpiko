@@ -305,7 +305,7 @@ class EnvelopedData::Impl {
         auto sn = BigInt::fromString(ss.str());
         serialNumbers.push_back(sn->toHexString());
         PKCS7_RECIP_INFO_free(recip);
-        free(bn);
+        BN_free(bn);
       }
       return serialNumbers;
     }
