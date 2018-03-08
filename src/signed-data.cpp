@@ -84,6 +84,30 @@ class SignedData::Impl {
       }
     }
 
+    void fromDer(const std::vector<unsigned char> der) {
+      imported = true;
+      BIO* mem = BIO_new_mem_buf((void*) der.data(), der.size());
+      pkcs7 = d2i_PKCS7_bio(mem, NULL);
+      auto ret = (pkcs7 != nullptr);
+
+      certList.clear();
+      for (auto i = 0; i < sk_X509_num(pkcs7->d.sign->cert); i++) {
+        X509* certificate = sk_X509_value(pkcs7->d.sign->cert, i);
+        auto pem = Converters::certificateToPem(certificate);
+        certList.push_back(Certificate::fromPem(pem));
+        if (i == 0) {
+          cert = certificate;
+        } else {
+          X509_free(certificate);
+        }
+      }
+
+      if (ret) {
+        success = true;
+        return;
+      }
+    }
+
     void fromPem(const std::string pem, const Certificate& certificate) {
       imported = true;
       BIO* mem = BIO_new_mem_buf((void*) pem.c_str(), pem.length());
@@ -242,6 +266,17 @@ SignedData* SignedData::fromDer(const std::vector<unsigned char> der, const Cert
   return p;
 }
 
+SignedData* SignedData::fromDer(const std::vector<unsigned char> der) {
+  auto p = new SignedData();
+
+  p->impl->fromDer(der);
+
+  if (!p->impl->success) {
+    return nullptr;
+  }
+  return p;
+}
+
 SignedData* SignedData::fromPem(const std::string pem, const Certificate& cert) {
   auto p = new SignedData();
 
@@ -300,19 +335,23 @@ bool SignedData::verify() const {
     flags = PKCS7_NOVERIFY;
   }
 
-  STACK_OF(X509) *certs = sk_X509_new_null();
   auto store = X509_STORE_new();
-  sk_X509_push(certs, impl->cert);
-  bool ret = 0;
-  if (PKCS7_is_detached(impl->pkcs7)) {
-    ret = PKCS7_verify(impl->pkcs7, certs, store, impl->bio, NULL, flags) == 1;
-  } else {
-    ret = PKCS7_verify(impl->pkcs7, certs, store, NULL, NULL, flags) == 1;
+  bool ret = 1;
+  for (auto i = 0; i < sk_X509_num(impl->pkcs7->d.sign->cert); i++) {
+    STACK_OF(X509) *certs = sk_X509_new_null();
+    X509* cert = sk_X509_value(impl->pkcs7->d.sign->cert, i);
+    sk_X509_push(certs, cert);
+    if (PKCS7_is_detached(impl->pkcs7)) {
+      ret = PKCS7_verify(impl->pkcs7, certs, store, impl->bio, NULL, flags) == 1;
+    } else {
+      ret = PKCS7_verify(impl->pkcs7, certs, store, NULL, NULL, flags) == 1;
+    }
+    if (ret == 0) {
+      ERR_print_errors_fp(stderr);
+      break;
+    }
+    sk_X509_free(certs);
   }
-  if (ret == 0) {
-    ERR_print_errors_fp(stderr);
-  }
-  sk_X509_free(certs);
   X509_STORE_free(store);
   return ret == 1;
 }
