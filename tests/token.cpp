@@ -300,12 +300,14 @@ SCENARIO("Token init", "[.][p11]") {
       REQUIRE(res == true);
 
       label = "unique";
+      auto v = t.getAllData(appName, label);
+      int before = v.size();
       r = t.putData(appName, label, hash);
       r = t.putData(appName, label, hash);
       r = t.putData(appName, label, hash);
 
-      auto v = t.getAllData(appName, label);
-      REQUIRE(v.size() == 3);
+      v = t.getAllData(appName, label);
+      REQUIRE(v.size() == (before + 3));
 
       r = t.putUniqueData(appName, label, hash);
       v = t.getAllData(appName, label);
@@ -505,130 +507,73 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
     REQUIRE(r == true);
     std::cout << "Logged in" << std::endl;
 
-    DataSource* src = DataSource::fromFile("assets/verify-2048-sized/crl.der");
+    DataSource* src = DataSource::fromFile("assets/verify/originCa.crl.der");
     auto originCaCrlDer = src->readAll();
+
+    src = DataSource::fromFile("assets/verify-2048-sized/crl.der");
+    auto originCa2048CrlDer = src->readAll();
 
     src = DataSource::fromFile("assets/verify/otherCa.crl.der");
     auto otherCaCrlDer = src->readAll();
 
-    std::cout << "Certificate::fromPem erpioktestsuite1" << std::endl;
     src = DataSource::fromFile("assets/verify-2048-sized/erpikotestsuite1.pem");
     auto v = src->readAll();
-    std::string pkitbverify1Pem(v.begin(),v.end());
-    Certificate* pkitbverify1Cert = Certificate::fromPem(pkitbverify1Pem);
-    REQUIRE_FALSE(pkitbverify1Cert == nullptr);
+    std::string erpikotestsuite1Pem(v.begin(),v.end());
+    Certificate* erpikotestsuite1Cert = Certificate::fromPem(erpikotestsuite1Pem);
+    REQUIRE_FALSE(erpikotestsuite1Cert == nullptr);
 
-    src = DataSource::fromFile("assets/verify/pkitbverify2.pem");
+    src = DataSource::fromFile("assets/verify-2048-sized/erpikotestsuite2.pem");
     v = src->readAll();
-    std::string pkitbverify2Pem(v.begin(),v.end());
-    Certificate* pkitbverify2Cert = Certificate::fromPem(pkitbverify2Pem);
-    REQUIRE_FALSE(pkitbverify2Cert == nullptr);
+    std::string erpikotestsuite2Pem(v.begin(),v.end());
+    Certificate* erpikotestsuite2Cert = Certificate::fromPem(erpikotestsuite2Pem);
+    REQUIRE_FALSE(erpikotestsuite2Cert == nullptr);
 
-    src = DataSource::fromFile("assets/verify/pkitbverify3.pem");
+    src = DataSource::fromFile("assets/verify-2048-sized/erpikotestsuite3.pem");
     v = src->readAll();
-    std::string pkitbverify3Pem(v.begin(),v.end());
-    Certificate* pkitbverify3Cert = Certificate::fromPem(pkitbverify3Pem);
-    REQUIRE_FALSE(pkitbverify3Cert == nullptr);
+    std::string erpikotestsuite3Pem(v.begin(),v.end());
+    Certificate* erpikotestsuite3Cert = Certificate::fromPem(erpikotestsuite3Pem);
+    REQUIRE_FALSE(erpikotestsuite3Cert == nullptr);
 
-    src = DataSource::fromFile("assets/verify/pkitbverify4.pem");
+    src = DataSource::fromFile("assets/verify-2048-sized/erpikotestsuite4.pem");
     v = src->readAll();
-    std::string pkitbverify4Pem(v.begin(),v.end());
-    Certificate* pkitbverify4Cert = Certificate::fromPem(pkitbverify4Pem);
-    REQUIRE_FALSE(pkitbverify4Cert == nullptr);
+    std::string erpikotestsuite4Pem(v.begin(),v.end());
+    Certificate* erpikotestsuite4Cert = Certificate::fromPem(erpikotestsuite4Pem);
+    REQUIRE_FALSE(erpikotestsuite4Cert == nullptr);
 
-    src = DataSource::fromFile("assets/verify/pkitbverify5.pem");
-    v = src->readAll();
-    std::string pkitbverify5Pem(v.begin(),v.end());
-    Certificate* pkitbverify5Cert = Certificate::fromPem(pkitbverify5Pem);
-    REQUIRE_FALSE(pkitbverify5Cert == nullptr);
-
-    src = DataSource::fromFile("assets/verify/pkitbverify6.pem");
-    v = src->readAll();
-    std::string pkitbverify6Pem(v.begin(),v.end());
-    Certificate* pkitbverify6Cert = Certificate::fromPem(pkitbverify6Pem);
-    REQUIRE_FALSE(pkitbverify6Cert == nullptr);
-
-    src = DataSource::fromFile("assets/verify/pkitbverify7.pem");
-    v = src->readAll();
-    std::string pkitbverify7Pem(v.begin(),v.end());
-    Certificate* pkitbverify7Cert = Certificate::fromPem(pkitbverify7Pem);
-    REQUIRE_FALSE(pkitbverify7Cert == nullptr);
-
-    src = DataSource::fromFile("assets/verify/pkitbverify8.pem");
-    v = src->readAll();
-    std::string pkitbverify8Pem(v.begin(),v.end());
-    Certificate* pkitbverify8Cert = Certificate::fromPem(pkitbverify8Pem);
-    REQUIRE_FALSE(pkitbverify8Cert == nullptr);
-
-    std::cout << "Certificate::fromPem originca" << std::endl;
+    std::cout << "Certificate::fromPem originca 2048" << std::endl;
     src = DataSource::fromFile("assets/verify-2048-sized/TNISiberLabCA3.pem");
     v = src->readAll();
-    std::string originCa(v.begin(),v.end());
-    Certificate* originCaCert = Certificate::fromPem(originCa);
-    REQUIRE_FALSE(originCaCert == nullptr);
+    std::string originCa2048(v.begin(),v.end());
+    Certificate* originCa2048Cert = Certificate::fromPem(originCa2048);
+    REQUIRE_FALSE(originCa2048Cert == nullptr);
 
     std::cout << "Certificate::fromPem originrootca" << std::endl;
-    src = DataSource::fromFile("assets/verify-2048-sized/erpikotestsuite2.pem");
+    src = DataSource::fromFile("assets/verify-2048-sized/TNISiberLabRootCA.pem");
     v = src->readAll();
     std::string originRootCa(v.begin(),v.end());
     Certificate* originRootCaCert = Certificate::fromPem(originRootCa);
     REQUIRE_FALSE(originRootCaCert == nullptr);
 
+
     THEN("verify the certs") {
 
       t.unsetKey();
-      // pkitbverify1, should be Trusted
-      std::cout << Utils::hexString(originCaCrlDer) << std::endl;
-      std::cout << "CACERT\n" << Utils::hexString(originRootCaCert->toDer()) << std::endl;
-      auto isTrusted = pkitbverify1Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify-2048-sized/TNISiberLabCA3-chain.pem");
+
+      // 2048-sized chains
+      // SHOULD BE TRUSTED
+      auto isTrusted = erpikotestsuite1Cert->isTrusted(originRootCaCert->toDer(), originCa2048CrlDer, "assets/verify-2048-sized/TNISiberLabCA3-chain.pem");
       REQUIRE(isTrusted == CertificateTrustState::TRUSTED);
-      auto isRevoked = pkitbverify1Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
-      REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
 
-      // pkitbverify2, should be EXPIRED
-      isTrusted = pkitbverify2Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify/originCa-chain.pem");
-      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
-      isRevoked = pkitbverify2Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
-      REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
-      // To bring the expired state to user, the expiration date could be checked manually in the cert itself.
-
-      // pkitbverify3, should be NOT TRUSTED
-      isTrusted = pkitbverify3Cert->isTrusted(originRootCaCert->toDer(), otherCaCrlDer, "assets/verify/originCa-chain.pem");
-      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
-      isRevoked = pkitbverify3Cert->isRevoked(originCaCert->toDer(), otherCaCrlDer);
-      REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
-
-      // pkitbverify4, should be NOT TRUSTED
-      isTrusted = pkitbverify4Cert->isTrusted(originRootCaCert->toDer(), otherCaCrlDer, "assets/verify/originCa-chain.pem");
-      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
-      isRevoked = pkitbverify4Cert->isRevoked(originCaCert->toDer(), otherCaCrlDer);
-      REQUIRE(isRevoked != CertificateRevocationState::REVOKED);
-/*
-
-      // pkitbverify5, should be REVOKED
-      isTrusted = pkitbverify5Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify/originCa-chain.pem");
+      isTrusted = erpikotestsuite2Cert->isTrusted(originRootCaCert->toDer(), originCa2048CrlDer, "assets/verify-2048-sized/TNISiberLabCA3-chain.pem");
       REQUIRE(isTrusted == CertificateTrustState::TRUSTED);
-      isRevoked = pkitbverify5Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
+
+      // erpikotestsuite3, should be REVOKED
+      auto isRevoked = erpikotestsuite3Cert->isRevoked(originCa2048Cert->toDer(), originCa2048CrlDer);
       REQUIRE(isRevoked == CertificateRevocationState::REVOKED);
 
-      // pkitbverify6, should be REVOKED
-      isTrusted = pkitbverify6Cert->isTrusted(originRootCaCert->toDer(), originCaCrlDer, "assets/verify/originCa-chain.pem");
+      // should be NOT_TRUSTED because of expired
+      isTrusted = erpikotestsuite4Cert->isTrusted(originRootCaCert->toDer(), originCa2048CrlDer, "assets/verify-2048-sized/TNISiberLabCA3-chain.pem");
       REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
-      isRevoked = pkitbverify6Cert->isRevoked(originCaCert->toDer(), originCaCrlDer);
-      REQUIRE(isRevoked == CertificateRevocationState::REVOKED);
-
-      // pkitbverify7, should be NOT TRUSTED
-      isTrusted = pkitbverify7Cert->isTrusted(originRootCaCert->toDer(), otherCaCrlDer, "assets/verify/originCa-chain.pem");
-      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
-      isRevoked = pkitbverify7Cert->isRevoked(originCaCert->toDer(), otherCaCrlDer);
-      REQUIRE(isRevoked == CertificateRevocationState::UNKNOWN);
-
-      // pkitbverify8, should be NOT TRUSTED
-      isTrusted = pkitbverify8Cert->isTrusted(originRootCaCert->toDer(), otherCaCrlDer, "assets/verify/originCa-chain.pem");
-      REQUIRE(isTrusted == CertificateTrustState::NOT_TRUSTED);
-      isRevoked = pkitbverify8Cert->isRevoked(originCaCert->toDer(), otherCaCrlDer);
-      REQUIRE(isRevoked == CertificateRevocationState::UNKNOWN);
-*/
     }
   }
 
