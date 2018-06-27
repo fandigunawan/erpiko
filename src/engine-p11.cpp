@@ -668,7 +668,10 @@ EngineP11::closeSession() {
 CardStatus::Value EngineP11::waitForCardStatus(int &slot) {
   std::cout << "Waiting for the slot event...\n";
   CK_SLOT_ID slotId;
-  CK_RV rvslot = F->C_WaitForSlotEvent(0, &slotId, nullptr);
+  CK_FLAGS flags = CKF_DONT_BLOCK;
+  std::cout << "ko\n";
+  CK_RV rvslot = F->C_WaitForSlotEvent(flags, &slotId, nullptr);
+  std::cout << "ok\n";
 
   // Some driver like acospkcs11.dll could not handle C_WaitForSlotEvent
   if (rvslot != CKR_TOKEN_NOT_PRESENT

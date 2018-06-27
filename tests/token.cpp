@@ -13,6 +13,23 @@
 
 using namespace std;
 
+#ifdef WIN32
+std::string PKCS11_DRIVER = "C:\\windows\\system32\\eTPKCS11.dll";
+/*
+ *  Other drivers :
+ *  - C:\\SoftHSM2\\lib\\softhsm2-x64.dll
+ *  - C:\\windows\\system32\\acospkcs11.dll
+ *  - C:\\windows\\system32\\pkcs11-logger-x86.dll
+ *  - C:\\windows\\system32\\pkcs11-logger-x86.dll // Logger midldeware from https://github.com/Pkcs11Interop/pkcs11-logger
+ * */
+#else
+std::string PKCS11_DRIVER = "/usr/lib/libeTPkcs11.so";
+/*
+ *  Other drivers :
+ *  - /usr/lib/softhsm/libsofthsm2.so
+ * */
+#endif
+
 namespace Erpiko {
 /*
  * This test supposed to be run against a newly initialized smartcard with empty storage
@@ -59,17 +76,8 @@ SCENARIO("Token init", "[.][p11]") {
       auto enc = k->publicKey().encrypt(v);
       P11Token p11Token;
       Token& t = (Token&)p11Token;
-#ifdef WIN32
-	  //auto r = t.load("C:\\SoftHSM2\\lib\\softhsm2-x64.dll");
-	  //auto r = t.load("c:\\windows\\system32\\acospkcs11.dll");
-	  auto r = t.load("c:\\windows\\system32\\eTPKCS11.dll");
-	  //auto r = t.load("c:\\windows\\system32\\pkcs11-logger-x86.dll");
-
-    // Logger midldeware from https://github.com/Pkcs11Interop/pkcs11-logger
-	  //auto r = t.load("c:\\windows\\system32\\pkcs11-logger-x86.dll");
-#else
-	  auto r = t.load("/home/mdamt/src/tmp/hsm/lib/softhsm/libsofthsm2.so");
-#endif
+	  auto r = t.load(PKCS11_DRIVER);
+      
       REQUIRE(r == true);
 
       std::cout << "Please insert the smartcard to slot" << std::endl;
@@ -87,6 +95,10 @@ SCENARIO("Token init", "[.][p11]") {
       r = t.login(slotId, "qwerty");
 #else
       auto status = t.waitForCardStatus(slotId);
+      if (status == CardStatus::NOT_PRESENT) {
+          std::cout << "Token not present, please put it back...";
+          status = t.waitForCardStatus(slotId);
+      }
       REQUIRE(status == CardStatus::PRESENT);
       std::cout << "Slot event occured. Card is present." << std::endl;
       std::cout << "Smartcard has been inserted" << std::endl;
@@ -183,12 +195,7 @@ SCENARIO("Token init", "[.][p11]") {
     THEN("Token is initialized") {
 
       P11Token t;
-#ifdef WIN32
-	  //auto r = t.load("C:\\SoftHSM2\\lib\\softhsm2-x64.dll");
-	  auto r = t.load("c:\\windows\\system32\\eTPKCS11.dll");
-#else
-	  auto r = t.load("/home/mdamt/src/tmp/hsm/lib/softhsm/libsofthsm2.so");
-#endif
+	  auto r = t.load(PKCS11_DRIVER);
       REQUIRE(r == true);
 #ifdef WIN32
       r = t.login(0, "qwerty");
@@ -338,11 +345,7 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
       P11Token p11Token;
       Token& t = (Token&)p11Token;
 
-#ifdef WIN32
-	  auto r = t.load("c:\\windows\\system32\\eTPKCS11.dll");
-#else
-	  auto r = t.load("/home/mdamt/src/tmp/hsm/lib/softhsm/libsofthsm2.so");
-#endif
+	  auto r = t.load(PKCS11_DRIVER);
       REQUIRE(r == true);
       std::cout << "Please insert the smartcard to slot" << std::endl;
       int slotId;
@@ -416,11 +419,7 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
       P11Token p11Token;
       Token& t = (Token&)p11Token;
 
-#ifdef WIN32
-	  auto r = t.load("c:\\windows\\system32\\eTPKCS11.dll");
-#else
-	  auto r = t.load("/home/mdamt/src/tmp/hsm/lib/softhsm/libsofthsm2.so");
-#endif
+	  auto r = t.load(PKCS11_DRIVER);
       REQUIRE(r == true);
       std::cout << "Please insert the smartcard to slot" << std::endl;
       int slotId;
@@ -489,12 +488,8 @@ SCENARIO("PKCS7 / Enveloped Data", "[.][p11]") {
 
     P11Token p11Token;
     Token& t = (Token&)p11Token;
+	auto r = t.load(PKCS11_DRIVER);
 
-#ifdef WIN32
-          auto r = t.load("c:\\windows\\system32\\eTPKCS11.dll");
-#else
-          auto r = t.load("/home/mdamt/src/tmp/hsm/lib/softhsm/libsofthsm2.so");
-#endif
     REQUIRE(r == true);
     std::cout << "Please insert the smartcard to slot" << std::endl;
     int slotId;
