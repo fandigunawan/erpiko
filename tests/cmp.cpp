@@ -25,11 +25,11 @@ SCENARIO("CMP ir request") {
     id->set("commonName", "testkk02");
     id->set("UID", "omama");
 
-    auto cmp = new Cmp();
 
 /*
     We don't have mocking in place, so yeah...
 
+    auto cmp = new Cmp();
     cmp->subject(*id);
     cmp->caCertificate(*cacert);
     cmp->serverName("ejbca.sandbox");

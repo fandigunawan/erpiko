@@ -206,7 +206,6 @@ SCENARIO("Token init", "[.][p11]") {
       REQUIRE(r == true);
 
       std::vector<Erpiko::Certificate*> certs = t.getCertificates(false);
-      int certsTotal = certs.size();
 
       auto src = DataSource::fromFile("assets/verify/pkitbverify1.pem");
       auto certData = src->readAll();
