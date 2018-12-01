@@ -53,7 +53,6 @@ SCENARIO("Verifying") {
     auto srcKey = DataSource::fromFile("assets/private.key");
     v = srcKey->readAll();
     std::string pemKey(v.begin(),v.end());
-    auto key = RsaKey::fromPem(pemKey);
 
     DataSource* src = DataSource::fromFile("assets/msg.txt");
 
@@ -76,7 +75,6 @@ SCENARIO("Verifying") {
     auto srcKey = DataSource::fromFile("assets/private.key");
     v = srcKey->readAll();
     std::string pemKey(v.begin(),v.end());
-    auto key = RsaKey::fromPem(pemKey);
 
     DataSource* src = DataSource::fromFile("assets/smime-signed.txt");
     auto s = src->readAll();
@@ -99,7 +97,6 @@ SCENARIO("Verifying") {
     auto srcKey = DataSource::fromFile("assets/private.key");
     v = srcKey->readAll();
     std::string pemKey(v.begin(),v.end());
-    auto key = RsaKey::fromPem(pemKey);
 
     DataSource* src = DataSource::fromFile("assets/smime-signed-with-attachment.txt");
     auto s = src->readAll();
@@ -124,7 +121,6 @@ SCENARIO("Encrypting") {
     auto srcKey = DataSource::fromFile("assets/private.key");
     v = srcKey->readAll();
     std::string pemKey(v.begin(),v.end());
-    auto key = RsaKey::fromPem(pemKey);
 
     DataSource* src = DataSource::fromFile("assets/msg.txt");
 

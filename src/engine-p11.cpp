@@ -296,9 +296,11 @@ int rsaPubEncrypt(int flen, const unsigned char *from, unsigned char *to, RSA *r
     return 0;
   }
 
-  CK_ULONG outLength;
+  CK_ULONG outLength = 0;
+  rv = F->C_Encrypt(p11.getSession(), const_cast<unsigned char*>(from), flen, nullptr, &outLength);
   rv = F->C_Encrypt(p11.getSession(), const_cast<unsigned char*>(from), flen, to, &outLength);
-  if (rv != CKR_OK) {
+  std::cout << "RV 1:" << rv << "-" <<  outLength << ":" << Utils::hexString(to, outLength) << "\n";
+  if (rv != CKR_OK && rv != CKR_BUFFER_TOO_SMALL) {
     return 0;
   }
 
@@ -371,12 +373,8 @@ int rsaSign(int type, const unsigned char *from, unsigned int flen, unsigned cha
 
   EngineP11& p11 = EngineP11::getInstance();
   CK_MECHANISM mechanism = {
-    CKM_SHA256_RSA_PKCS, nullptr, 0
+    CKM_RSA_PKCS, nullptr, 0
   };
-
-  if (!populateMechanism(&mechanism, type)) {
-    return 0;
-  }
 
   CK_OBJECT_HANDLE key;
   if ((int)p11.getKeyId() > -1 || strlen(p11.getKeyLabel().c_str()) > 0) {
@@ -388,31 +386,47 @@ int rsaSign(int type, const unsigned char *from, unsigned int flen, unsigned cha
     return 0;
   }
 
-  CK_OBJECT_HANDLE pubKey = findKey(CKO_PUBLIC_KEY, p11.getKeyId(), p11.getKeyLabel().c_str());
-  if (pubKey == 0) {
-    pubKey = findPublicKey(rsa);
-    if (pubKey == 0) {
-      return 0;
-    }
-  }
-
-  CK_ULONG bits;
-  CK_ATTRIBUTE pubValueT[] = {
-    {CKA_MODULUS_BITS, &bits, sizeof(bits)}
-  };
-
-  CK_RV rv = F->C_GetAttributeValue(p11.getSession(), pubKey, pubValueT, 1);
+  CK_RV rv = F->C_SignInit(p11.getSession(), &mechanism, key);
   if (rv != CKR_OK) {
+    std::cout << "SignInit got:" << rv <<"\n";
     return 0;
   }
 
-  rv = F->C_SignInit(p11.getSession(), &mechanism, key);
-  if (rv != CKR_OK) {
+  X509_SIG sig;
+  X509_ALGOR algo;
+  ASN1_TYPE parameter;
+  ASN1_OCTET_STRING digest;
+
+  sig.algor = &algo;
+  sig.algor->algorithm = OBJ_nid2obj(type);
+  if (sig.algor->algorithm == nullptr || sig.algor->algorithm->length == 0) {
+    // Error getting algo ID
+    std::cout << "error getting algo id\n";
     return 0;
   }
-  CK_ULONG outLength = bits/8;
-  rv = F->C_Sign(p11.getSession(), const_cast<unsigned char*>(from), flen, to, &outLength);
-  if (rv != CKR_OK) {
+
+  parameter.type = V_ASN1_NULL;
+  parameter.value.ptr = NULL;
+  sig.algor->parameter = &parameter;
+
+  sig.digest = &digest;
+  sig.digest->data = const_cast<unsigned char*>(from);
+  sig.digest->length = flen;
+
+  unsigned char *sigDer;
+  sigDer = nullptr;
+
+  auto sigLength = i2d_X509_SIG(&sig, &sigDer);
+
+  if (sigDer == nullptr) {
+    std::cout << "error sigder 0\n";
+    return 0;
+  }
+
+  CK_ULONG outLength = 256;
+  rv = F->C_Sign(p11.getSession(), sigDer, sigLength, to, &outLength);
+  if (rv != CKR_OK && rv != CKR_BUFFER_TOO_SMALL) {
+    std::cout << "Sign got:" << rv <<"\n";
     return 0;
   }
 
@@ -656,7 +670,7 @@ EngineP11::logout() {
   return false;
 }
 
-bool 
+bool
 EngineP11::closeSession() {
   if (F->C_CloseSession(session) == CKR_OK) {
     session = 0;
@@ -1143,6 +1157,35 @@ EngineP11::putCertificate(const Certificate& cert) {
   return TokenOpResult::SUCCESS;
 }
 
+std::vector<SlotInfo> EngineP11::getAllSlotsInfo(bool isTokenPresentOnly) {
+  CK_ULONG listCount;
+  CK_RV rv;
+  CK_SLOT_ID_PTR pSlotList;
+  std::vector<SlotInfo> slots;
+  rv = F->C_GetSlotList(isTokenPresentOnly ? CK_TRUE : CK_FALSE, NULL_PTR, &listCount);
+  if (rv != CKR_OK || listCount < 1) {
+    return slots;
+  }
+  pSlotList = (CK_SLOT_ID_PTR)malloc(listCount * sizeof(CK_SLOT_ID));
+  rv = F->C_GetSlotList(isTokenPresentOnly ? CK_TRUE : CK_FALSE, pSlotList, &listCount);
+  if (rv == CKR_OK) {
+    for (int i = 0; i < (int)listCount; i++) {
+      CK_SLOT_INFO slotInfo;
+      SlotInfo tInfo;
+      (void)F->C_GetSlotInfo(pSlotList[i], &slotInfo);
+      tInfo.slotId = pSlotList[i];
+      std::string m = (string)(char*)slotInfo.manufacturerID;
+      tInfo.manufacturerID = m.substr(0, 32);
+      std::string d = (string)(char*)slotInfo.slotDescription;
+      tInfo.description = d.substr(0, 64);
+      tInfo.flags = slotInfo.flags;
+      slots.push_back(tInfo);
+    }
+  }
+  free(pSlotList);
+  return slots;
+}
+
 std::vector<TokenInfo> EngineP11::getAllTokensInfo() {
   CK_ULONG listCount;
   CK_RV rv;
@@ -1182,8 +1225,9 @@ std::vector<TokenInfo> EngineP11::getAllTokensInfo() {
       tInfo.freePublicMemory = (int)tokenInfo.ulFreePublicMemory;
       tInfo.totalPrivateMemory = (int)tokenInfo.ulTotalPrivateMemory;
       tInfo.freePrivateMemory = (int)tokenInfo.ulFreePrivateMemory;
-	  tInfo.slotsFlags = slotInfo.flags;
-	  tInfo.tokenFlags = tokenInfo.flags;
+      tInfo.slotsFlags = slotInfo.flags;
+      tInfo.tokenFlags = tokenInfo.flags;
+
       slots.push_back(tInfo);
     }
   }

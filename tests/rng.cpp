@@ -27,7 +27,6 @@ SCENARIO("RNG 2") {
     Rng rng;
 
     std::string s = "this is seed";
-    int fulfilled = 0;
     rng.seed(s.data(), s.length());
     std::vector<std::vector<unsigned char>> r;
 #define MAX_R 10000

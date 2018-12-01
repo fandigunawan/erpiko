@@ -81,6 +81,6 @@ mkdir catch
 
 cd catch
 
-wget -O catch.hpp https://raw.githubusercontent.com/philsquared/Catch/master/single_include/catch.hpp
+wget -O catch.hpp https://github.com/catchorg/Catch2/releases/download/v2.4.1/catch.hpp
 
 cd %workingdir%

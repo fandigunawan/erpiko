@@ -17,7 +17,6 @@ SCENARIO("Import signed data from DER test") {
     auto srcKey = DataSource::fromFile("assets/private.key");
     v = srcKey->readAll();
     std::string pemKey(v.begin(),v.end());
-    auto key = RsaKey::fromPem(pemKey);
 
     DataSource* src = DataSource::fromFile("assets/data.txt.signed");
 

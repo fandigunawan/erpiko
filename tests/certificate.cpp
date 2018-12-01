@@ -91,7 +91,7 @@ SCENARIO("Import certificate from DER test") {
           }
 
         }
-        REQUIRE(allExtsInspected == 1);
+        REQUIRE(allExtsInspected == 2);
 
       }
     }
@@ -277,7 +277,6 @@ SCENARIO("Generate a PKCS10 test") {
 
 SCENARIO("Writing to certificate test") {
   GIVEN("A new certificate") {
-    Certificate* cert = new Certificate();
     Time start("800212215620Z");
     Time end("800212215622Z");
     Identity subject;
